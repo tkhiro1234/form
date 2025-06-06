@@ -42,18 +42,15 @@
       cursor: pointer;
     }
 
-    /* ラジオボタンをボタン風に見せる */
     .radio-group {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       margin-top: 8px;
     }
-
     .radio-group input[type="radio"] {
       display: none;
     }
-
     .radio-group label {
       background-color: #eee;
       padding: 12px 16px;
@@ -66,18 +63,40 @@
       user-select: none;
       flex: 1;
     }
-
     .radio-group input[type="radio"]:checked + label {
       background-color: #4CAF50;
       color: white;
       border-color: #388E3C;
+    }
+
+    /* プログレスバー */
+    #progress-bar {
+      display: none;
+      margin-top: 16px;
+    }
+    #progress-container {
+      width: 100%;
+      background-color: #eee;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    #bar-inner {
+      width: 0%;
+      height: 10px;
+      background-color: #4CAF50;
+      animation: progressAnim 2s infinite;
+    }
+    @keyframes progressAnim {
+      0% { width: 0%; }
+      50% { width: 80%; }
+      100% { width: 0%; }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>追加注文フォーム</h2>
-    <form id="orderForm" method="POST" action="https://script.google.com/macros/s/AKfycbxLScw61IEzuromuCENd-YmzI2qsKHRPSOcAQkAT_3YaxB_EFtLQlBIoKbENVbXeT0Ffg/exec">
+    <form id="orderForm" method="POST" action="https://script.google.com/macros/s/AKfycbyvAB3pMHGL4WkcpKLz1sJ1b7LNXTC6fyVsV-3ECNPHxPJayvhzTuy3JgQoeLsWRHi7yQ/exec">
       
       <label for="code">コード</label>
       <input type="text" id="code" name="code" required>
@@ -86,6 +105,14 @@
       <input type="text" id="name" name="name" placeholder="自動取得" required>
 
       <button type="button" class="update-btn" onclick="refreshMaster()">📦 マスタを更新</button>
+
+      <!-- プログレスバー -->
+      <div id="progress-bar">
+        <div id="progress-container">
+          <div id="bar-inner"></div>
+        </div>
+        <p style="text-align:center;">マスタを更新中...</p>
+      </div>
 
       <label for="qty">数量</label>
       <input type="number" id="qty" name="qty" min="1" required>
@@ -107,15 +134,14 @@
 
       <label>生産指示</label>
       <div class="radio-group">
-        <input type="radio" id="inst-normal" name="instruction" value="通常品">
-        <label for="inst-normal">通常品</label>
-
         <input type="radio" id="inst-hollow" name="instruction" value="中空" required>
         <label for="inst-hollow">中空</label>
 
         <input type="radio" id="inst-solid" name="instruction" value="ムク">
         <label for="inst-solid">ムク</label>
 
+        <input type="radio" id="inst-normal" name="instruction" value="通常品">
+        <label for="inst-normal">通常品</label>
       </div>
 
       <label>追加理由</label>
@@ -123,11 +149,8 @@
         <input type="radio" id="reason-short" name="reason" value="鋳物ショート" required>
         <label for="reason-short">鋳物ショート</label>
 
-        <input type="radio" id="reason-defect1" name="reason" value="試吹">
-        <label for="reason-defect1">試吹</label>
-
-        <input type="radio" id="reason-defect2" name="reason" value="中子起因不良">
-        <label for="reason-defect2">中子起因不良</label>
+        <input type="radio" id="reason-defect" name="reason" value="中子起因不良">
+        <label for="reason-defect">中子起因不良</label>
 
         <input type="radio" id="reason-other" name="reason" value="その他">
         <label for="reason-other">その他</label>
@@ -152,23 +175,16 @@
   </div>
 
   <script>
-    let masterData = {}; // コード → 品名のマスタ
-    let loadingInterval = null; // アニメーション用
+    let masterData = {};
 
     function loadMaster() {
       const btn = document.querySelector('.update-btn');
-      const originalText = btn.textContent;
-      let dotCount = 0;
+      const bar = document.getElementById("progress-bar");
 
-      // アニメーション開始
       btn.disabled = true;
-      loadingInterval = setInterval(() => {
-        dotCount = (dotCount + 1) % 4;
-        const dots = '.'.repeat(dotCount);
-        btn.textContent = `🔄 更新しています${dots}`;
-      }, 500);
+      btn.textContent = "🔄 更新中...";
+      bar.style.display = "block";
 
-      // マスタ取得
       fetch("https://script.google.com/macros/s/AKfycbwHXXsWCfC428bkGIQldinCTdqtMSLJkdr7JkcFYo8ZaZoZCSnMnniRNg6hJTPHOgAtKA/exec")
         .then(res => res.json())
         .then(data => {
@@ -180,9 +196,9 @@
           alert("❌ マスタの取得に失敗しました");
         })
         .finally(() => {
-          clearInterval(loadingInterval);
-          btn.textContent = originalText;
+          btn.textContent = "📦 マスタを更新";
           btn.disabled = false;
+          bar.style.display = "none";
         });
     }
 
@@ -190,13 +206,11 @@
       loadMaster();
     }
 
-    // コード入力時に品名自動反映
     document.getElementById("code").addEventListener("input", function () {
       const code = this.value.trim();
       document.getElementById("name").value = masterData[code] || "";
     });
 
-    // 「追加理由」で「その他」選択時に入力欄表示
     document.querySelectorAll('input[name="reason"]').forEach((el) => {
       el.addEventListener('change', () => {
         const otherInput = document.getElementById('reasonOther');
