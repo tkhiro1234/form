@@ -155,45 +155,44 @@
   </div>
 
   <script>
-    let masterData = {}; // コード → 品名のマスタ
+  let masterData = {}; // コード → 品名のマスタ
+  let loadingInterval = null; // アニメーション用
 
-    function loadMaster() {
-      fetch("https://script.google.com/macros/s/AKfycbwHXXsWCfC428bkGIQldinCTdqtMSLJkdr7JkcFYo8ZaZoZCSnMnniRNg6hJTPHOgAtKA/exec")
-        .then(res => res.json())
-        .then(data => {
-          masterData = data;
-          alert("✅ マスタを最新に更新しました");
-        })
-        .catch(err => {
-          console.error("❌ マスタ取得失敗:", err);
-          alert("❌ マスタの取得に失敗しました");
-        });
-    }
+  function loadMaster() {
+    const btn = document.querySelector('.update-btn');
+    const originalText = btn.textContent;
+    let dotCount = 0;
 
-    function refreshMaster() {
-      loadMaster();
-    }
+    // アニメーション開始
+    btn.disabled = true;
+    loadingInterval = setInterval(() => {
+      dotCount = (dotCount + 1) % 4;
+      const dots = '.'.repeat(dotCount);
+      btn.textContent = `🔄 更新しています${dots}`;
+    }, 500);
 
-    // コード入力時に品名自動反映
-    document.getElementById("code").addEventListener("input", function () {
-      const code = this.value.trim();
-      document.getElementById("name").value = masterData[code] || "";
-    });
-
-    // 「追加理由」で「その他」選択時に入力欄表示
-    document.querySelectorAll('input[name="reason"]').forEach((el) => {
-      el.addEventListener('change', () => {
-        const otherInput = document.getElementById('reasonOther');
-        if (el.value === 'その他' && el.checked) {
-          otherInput.style.display = 'block';
-          otherInput.required = true;
-        } else if (el.checked) {
-          otherInput.style.display = 'none';
-          otherInput.required = false;
-        }
+    // マスタ取得
+    fetch("https://script.google.com/macros/s/AKfycbwHXXsWCfC428bkGIQldinCTdqtMSLJkdr7JkcFYo8ZaZoZCSnMnniRNg6hJTPHOgAtKA/exec")
+      .then(res => res.json())
+      .then(data => {
+        masterData = data;
+        alert("✅ マスタを最新に更新しました");
+      })
+      .catch(err => {
+        console.error("❌ マスタ取得失敗:", err);
+        alert("❌ マスタの取得に失敗しました");
+      })
+      .finally(() => {
+        clearInterval(loadingInterval);
+        btn.textContent = originalText;
+        btn.disabled = false;
       });
-    });
-  </script>
+  }
+
+  function refreshMaster() {
+    loadMaster();
+  }
+</script>
 </body>
 </html>
 
