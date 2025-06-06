@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<!-- ここから下、form.htmlのコードを全部ペースト -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>追加注文フォーム</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: "Meiryo", sans-serif;
+      background: #f7f7f7;
+      padding: 16px;
+    }
+    .container {
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 520px;
+      margin: auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 16px;
+      font-weight: bold;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 8px;
+      box-sizing: border-box;
+    }
+    button.update-btn {
+      background-color: #4CAF50;
+      color: white;
+      margin-top: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* ラジオボタンをボタン風に見せる */
+    .radio-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .radio-group input[type="radio"] {
+      display: none;
+    }
+
+    .radio-group label {
+      background-color: #eee;
+      padding: 12px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid #ccc;
+      font-weight: bold;
+      text-align: center;
+      transition: 0.2s ease;
+      user-select: none;
+      flex: 1;
+    }
+
+    .radio-group input[type="radio"]:checked + label {
+      background-color: #4CAF50;
+      color: white;
+      border-color: #388E3C;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>追加注文フォーム</h2>
+    <form id="orderForm" method="POST" action="https://script.google.com/macros/s/AKfycbyvAB3pMHGL4WkcpKLz1sJ1b7LNXTC6fyVsV-3ECNPHxPJayvhzTuy3JgQoeLsWRHi7yQ/exec">
+      
+      <label for="code">コード</label>
+      <input type="text" id="code" name="code" required>
+
+      <label for="name">品名</label>
+      <input type="text" id="name" name="name" placeholder="自動取得" required>
+
+      <button type="button" class="update-btn" onclick="refreshMaster()">📦 マスタを更新</button>
+
+      <label for="qty">数量</label>
+      <input type="number" id="qty" name="qty" min="1" required>
+
+      <label for="time">納入希望日時</label>
+      <input type="datetime-local" id="time" name="time" required>
+
+      <label>砂の種類</label>
+      <div class="radio-group">
+        <input type="radio" id="sand-alb" name="sand" value="ALB" required>
+        <label for="sand-alb">ALB</label>
+
+        <input type="radio" id="sand-f25" name="sand" value="F-25">
+        <label for="sand-f25">F-25</label>
+
+        <input type="radio" id="sand-other" name="sand" value="その他">
+        <label for="sand-other">その他</label>
+      </div>
+
+      <label>生産指示</label>
+      <div class="radio-group">
+        <input type="radio" id="inst-normal" name="instruction" value="通常品">
+        <label for="inst-normal">通常品</label>
+
+        <input type="radio" id="inst-hollow" name="instruction" value="中空" required>
+        <label for="inst-hollow">中空</label>
+
+        <input type="radio" id="inst-solid" name="instruction" value="ムク">
+        <label for="inst-solid">ムク</label>
+
+      </div>
+
+      <label>追加理由</label>
+      <div class="radio-group">
+        <input type="radio" id="reason-short" name="reason" value="鋳物ショート" required>
+        <label for="reason-short">鋳物ショート</label>
+
+        <input type="radio" id="reason-defect" name="reason" value="試吹">
+        <label for="reason-defect">試吹</label>
+
+        <input type="radio" id="reason-defect" name="reason" value="中子起因不良">
+        <label for="reason-defect">中子起因不良</label>
+
+        <input type="radio" id="reason-other" name="reason" value="その他">
+        <label for="reason-other">その他</label>
+      </div>
+      <input type="text" id="reasonOther" name="reason_other" placeholder="その他の理由を入力" style="display:none; margin-top:8px;">
+
+      <label for="memo">備考</label>
+      <textarea name="memo" id="memo" rows="3"></textarea>
+
+      <label for="staff">担当者</label>
+      <select name="staff" id="staff" required>
+        <option value="">選択してください</option>
+        <option value="九十九">九十九</option>
+        <option value="平山">平山</option>
+        <option value="徳重">徳重</option>
+        <option value="阿部">阿部</option>
+        <option value="川越">川越</option>
+      </select>
+
+      <button type="submit">送信する</button>
+    </form>
+  </div>
+
+  <script>
+    let masterData = {}; // コード → 品名のマスタ
+
+    function loadMaster() {
+      fetch("https://script.google.com/macros/s/AKfycbwHXXsWCfC428bkGIQldinCTdqtMSLJkdr7JkcFYo8ZaZoZCSnMnniRNg6hJTPHOgAtKA/exec")
+        .then(res => res.json())
+        .then(data => {
+          masterData = data;
+          alert("✅ マスタを最新に更新しました");
+        })
+        .catch(err => {
+          console.error("❌ マスタ取得失敗:", err);
+          alert("❌ マスタの取得に失敗しました");
+        });
+    }
+
+    function refreshMaster() {
+      loadMaster();
+    }
+
+    // コード入力時に品名自動反映
+    document.getElementById("code").addEventListener("input", function () {
+      const code = this.value.trim();
+      document.getElementById("name").value = masterData[code] || "";
+    });
+
+    // 「追加理由」で「その他」選択時に入力欄表示
+    document.querySelectorAll('input[name="reason"]').forEach((el) => {
+      el.addEventListener('change', () => {
+        const otherInput = document.getElementById('reasonOther');
+        if (el.value === 'その他' && el.checked) {
+          otherInput.style.display = 'block';
+          otherInput.required = true;
+        } else if (el.checked) {
+          otherInput.style.display = 'none';
+          otherInput.required = false;
+        }
+      });
+    });
+  </script>
+</body>
+</html>
+
+<!-- ここまで -->
+</html>
